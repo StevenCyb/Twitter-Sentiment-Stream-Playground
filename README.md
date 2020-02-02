@@ -5,3 +5,6 @@ The picture below illustrates the structure of the cluster. There can be up to t
 ![Overview](/media/overview.jpg)
 
 You can run the cluster with `sh run_compose.sh` and stop with `sh stop_compose.sh`. To completely reset the Docker, use `sh reset_docker.sh` (delete everything). Just play around with it a little ;)
+
+K2SS creat a index automatically.You can use the dashboard template from the repository to quickly and easily visualize the data.
+![Overview-Splunk](/media/splunk.jpg)
