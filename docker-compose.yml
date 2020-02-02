@@ -1,0 +1,123 @@
+version: '3'
+services:
+  ## Define a Kafka environment
+  zoo:
+    image: wurstmeister/zookeeper
+    container_name: zoo
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    depends_on:
+      - zoo
+    ports:
+      - "9092:9092"
+    env_file: .env
+    environment:
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ZOOKEEPER_CONNECT=zoo:2181
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CREATE_TOPICS=$KAFKA_TOPIC:1:1
+  ## Define a Splunk environment and a Kafka to Splunk streaming service
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk
+    ports:
+      - "80:8000"
+      - "8089:8089"
+    env_file: .env
+    environment:
+      - SPLUNK_START_ARGS=--accept-license --no-prompt
+      - SPLUNK_USERNAME=$SPLUNK_USERNAME
+      - SPLUNK_PASSWORD=$SPLUNK_PASSWORD
+  k2ss:
+    container_name: k2ss
+    restart: always
+    build: ./Kafka2SplunkService
+    depends_on:
+      - kafka
+      - splunk
+    env_file: .env
+    environment:
+      - KAFKA_TOPIC=$KAFKA_TOPIC
+      - KAFKA_HOST=kafka:9092
+      - SPLUNK_HOST=splunk:8089
+      - SPLUNK_USERNAME=$SPLUNK_USERNAME
+      - SPLUNK_PASSWORD=$SPLUNK_PASSWORD
+  ## Define some sentiment analysis services 
+  sas1:
+    container_name: sas1
+    depends_on: 
+      - kafka
+    restart: always
+    build: ./SentimentAnalysisService
+    env_file: .env
+    environment:
+      - SENTIMENT_WEIGHTS=$SENTIMENT_WEIGHTS
+      - TOPIC=$KAFKA_TOPIC
+      - KAFKA_HOST=kafka:9092
+  sas2:
+    container_name: sas2
+    depends_on: 
+      - kafka
+    restart: always
+    build: ./SentimentAnalysisService
+    env_file: .env
+    environment:
+      - SENTIMENT_WEIGHTS=$SENTIMENT_WEIGHTS
+      - TOPIC=$KAFKA_TOPIC
+      - KAFKA_HOST=kafka:9092
+  sas3:
+    container_name: sas3
+    depends_on: 
+      - kafka
+    restart: always
+    build: ./SentimentAnalysisService
+    env_file: .env
+    environment:
+      - SENTIMENT_WEIGHTS=$SENTIMENT_WEIGHTS
+      - TOPIC=$KAFKA_TOPIC
+      - KAFKA_HOST=kafka:9092
+  ## Define a proxy to balance requests to the sentiment analysis services
+  proxy:
+    container_name: proxy
+    restart: always
+    build: ./LoadBalancer
+    depends_on:
+      - sas1
+      - sas2
+      - sas3
+    ports:
+      - "3000:3000"
+  ## Define some tweet streams with different track/'s
+  tss1:
+    container_name: tss1
+    restart: always
+    build: ./TwitterStreamService
+    depends_on:
+      - proxy
+    env_file: .env
+    environment:
+      - TWITTER_CONSUMER_KEY=$TWITTER_CONSUMER_KEY
+      - TWITTER_CONSUMER_SECRET=$TWITTER_CONSUMER_SECRET
+      - TWITTER_ACCESS_TOKEN_KEY=$TWITTER_ACCESS_TOKEN_KEY
+      - TWITTER_ACCESS_TOKEN_SECRET=$TWITTER_ACCESS_TOKEN_SECRET
+      - TWITTER_LANGUAGE=en
+      - TWITTER_TRACKS=python
+      - SAS_PROXY_HOST=proxy:3000
+  tss2:
+    container_name: tss2
+    restart: always
+    build: ./TwitterStreamService
+    depends_on:
+      - proxy
+    env_file: .env
+    environment:
+      - TWITTER_CONSUMER_KEY=$TWITTER_CONSUMER_KEY
+      - TWITTER_CONSUMER_SECRET=$TWITTER_CONSUMER_SECRET
+      - TWITTER_ACCESS_TOKEN_KEY=$TWITTER_ACCESS_TOKEN_KEY
+      - TWITTER_ACCESS_TOKEN_SECRET=$TWITTER_ACCESS_TOKEN_SECRET
+      - TWITTER_LANGUAGE=en
+      - TWITTER_TRACKS=java,javascript,js
+      - SAS_PROXY_HOST=proxy:3000

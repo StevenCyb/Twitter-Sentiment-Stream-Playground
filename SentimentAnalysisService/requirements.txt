@@ -1,0 +1,3 @@
+numpy==1.16.1
+kafka-python==1.4.7
+tensorflow==2.1.0

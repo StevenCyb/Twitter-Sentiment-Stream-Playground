@@ -1,0 +1,2 @@
+kafka-python==1.4.7
+splunk-sdk==1.6.11

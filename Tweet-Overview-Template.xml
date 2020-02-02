@@ -1,0 +1,43 @@
+<dashboard>
+    <label>Tweet-Overview</label>
+    <description>A simple Tweet-Overview dashboard example.</description>
+    <row>
+      <panel>
+        <chart>
+          <title>Sentiment</title>
+          <search>
+            <query>index="tweet" | stats avg(sentiment) as sentiment by tracks</query>
+            <earliest>-24h@h</earliest>
+            <latest>now</latest>
+          </search>
+          <option name="charting.chart">column</option>
+          <option name="charting.drilldown">none</option>
+        </chart>
+      </panel>
+    </row>
+    <row>
+      <panel>
+        <chart>
+          <title>Amount of Tweets</title>
+          <search>
+            <query>index="tweet" | spath tracks | top tracks</query>
+            <earliest>-24h@h</earliest>
+            <latest>now</latest>
+          </search>
+          <option name="charting.chart">pie</option>
+          <option name="charting.drilldown">none</option>
+        </chart>
+      </panel>
+      <panel>
+        <table>
+          <title>Top-Hashtags</title>
+          <search>
+            <query>index="tweet" | rename hashtags{}.text as hashtags | fields hashtags | mvexpand hashtags | top hashtags</query>
+            <earliest>-24h@h</earliest>
+            <latest>now</latest>
+          </search>
+          <option name="drilldown">none</option>
+        </table>
+      </panel>
+    </row>
+  </dashboard>
